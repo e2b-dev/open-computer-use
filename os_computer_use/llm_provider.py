@@ -16,7 +16,7 @@ class LLMProvider:
     api_key = None
 
     # Mapping of model aliases
-    aliases = []
+    aliases = {}
 
     def __init__(self, model):
         # Validate base URL and API key
