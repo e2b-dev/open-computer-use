@@ -22,7 +22,7 @@ The details of the design are laid out in this article: [How I taught an AI to u
 
 ## LLM support
 
-Open Computer Use is designed to easily support new LLMs. The LLM and provider combinations are are defined in [models.py](/blob/master/os_computer_use/models.py). Following the comments in this file, one can easily add any LLM and provider that adheres to the OpenAI API specification.
+Open Computer Use is designed to easily support new LLMs. The LLM and provider combinations are are defined in [models.py](https://github.com/e2b-dev/open-computer-use/blob/master/os_computer_use/models.py). Following the comments in this file, one can easily add any LLM and provider that adheres to the OpenAI API specification.
 
 The list of tested models and providers currently includes:
 
