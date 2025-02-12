@@ -4,6 +4,7 @@ from anthropic import Anthropic
 import json
 import re
 import base64
+import imghdr
 
 
 def Message(content, role="assistant"):
@@ -68,8 +69,8 @@ class LLMProvider:
     # Wrap a content block in a text or an image object
     def wrap_block(self, block):
         if isinstance(block, bytes):
-            encoded_image = base64.b64encode(block).decode("utf-8")
-            return self.create_image_block(encoded_image)
+            # Pass raw bytes so that imghdr can detect the image type properly.
+            return self.create_image_block(block)
         else:
             return Text(block)
 
@@ -117,10 +118,20 @@ class OpenAIBaseProvider(LLMProvider):
             },
         }
 
-    def create_image_block(self, base64_image):
+    def create_image_block(self, image_data):
+        # Detect the image type using imghdr.
+        image_type = imghdr.what(None, image_data)
+        if image_type is None:
+            image_type = "png"  # fallback if type cannot be detected
+
+        # Print detected image type for debugging
+        # print(f"Detected image type: {image_type}")
+
+        # Base64-encode the raw image bytes.
+        encoded = base64.b64encode(image_data).decode("utf-8")
         return {
             "type": "image_url",
-            "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+            "image_url": {"url": f"data:image/{image_type};base64,{encoded}"},
         }
 
     def call(self, messages, functions=None):
