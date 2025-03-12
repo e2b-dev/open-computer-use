@@ -16,7 +16,7 @@ e2b-desktop = "^1.0.2"
 openai = "^1.59.5"
 anthropic = "^0.44.0"
 pyqtwebengine = "^5.15.7"
-pywebview = "^5.4"
+pywebview = {extras = ["qt"], version = "^5.4"}
 
 [tool.poetry.scripts]
 start = "main:main"
