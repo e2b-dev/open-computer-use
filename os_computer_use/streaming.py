@@ -3,9 +3,6 @@ import asyncio
 import os
 import signal
 import sys
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import Qt, QUrl
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings
 
 
 class Sandbox(SandboxBase):
