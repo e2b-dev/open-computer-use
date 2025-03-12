@@ -70,7 +70,7 @@ class SandboxAgent:
         return filepath
 
     def take_screenshot(self):
-        file = self.sandbox.take_screenshot()
+        file = self.sandbox.screenshot()
         filename = self.save_image(file, "screenshot")
         logger.log(f"screenshot {filename}", "gray")
         self.latest_screenshot = filename
