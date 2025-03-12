@@ -81,12 +81,6 @@ async def start(user_input=None, output_dir=None):
         #    except Exception as e:
         #        print(f"Error saving stream: {str(e)}")
 
-        print("Stopping the VNC client...")
-        try:
-            browser.close()
-        except Exception as e:
-            print(f"Error stopping VNC client: {str(e)}")
-
 
 def initialize_output_directory(directory_format):
     run_id = 1
