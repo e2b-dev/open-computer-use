@@ -311,6 +311,29 @@ pillow = ">=11.1.0,<12.0.0"
 requests = ">=2.32.3,<3.0.0"
 
 [[package]]
+name = "elevenlabs"
+version = "1.54.0"
+description = ""
+optional = false
+python-versions = "<4.0,>=3.8"
+groups = ["main"]
+files = [
+    {file = "elevenlabs-1.54.0-py3-none-any.whl", hash = "sha256:ea3935e2daa6045471a039a00ad7ae1fd2f1c2fc148ee75af5b99e1a135e1925"},
+    {file = "elevenlabs-1.54.0.tar.gz", hash = "sha256:d559786363dc3fca0121e8baac51d31149cf96284dff04e523e961dc1085dfd4"},
+]
+
+[package.dependencies]
+httpx = ">=0.21.2"
+pydantic = ">=1.9.2"
+pydantic-core = ">=2.18.2,<3.0.0"
+requests = ">=2.20"
+typing_extensions = ">=4.0.0"
+websockets = ">=11.0"
+
+[package.extras]
+pyaudio = ["pyaudio (>=0.2.14)"]
+
+[[package]]
 name = "exceptiongroup"
 version = "1.2.2"
 description = "Backport of PEP 654 (exception groups)"
@@ -1799,4 +1822,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "9f40fb18a8f1c94c6303f40c5961aa43a84c38dec53a91b1346d3563c5ad9f43"
+content-hash = "3fd671424284f82df461a621b82dc876cce7153244dd82b8d4f5eb020ad2ce96"
