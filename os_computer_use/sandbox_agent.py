@@ -78,18 +78,13 @@ class SandboxAgent:
             return image_file.read()
 
     @tool(
-        description="Run a shell command and return the result.",
-        params={"command": "Shell command to run synchronously"},
+        description="Open a browser with the specific webpage. Always use this action to open the browser, ignore the Globe icon.",
+        params={"url": "URL for the browser to open"},
     )
-    def run_command(self, command):
-        result = self.sandbox.commands.run(command, timeout=5)
-        stdout, stderr = result.stdout, result.stderr
-        if stdout and stderr:
-            return stdout + "\n" + stderr
-        elif stdout or stderr:
-            return stdout + stderr
-        else:
-            return "The command finished running."
+    def open_webpage(self, url):
+        self.sandbox.commands.run(f"/usr/bin/firefox-sr {url}")
+
+        return f"The {url} has been opened."
 
     @tool(
         description="Run a shell command in the background.",
