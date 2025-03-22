@@ -1,3 +1,4 @@
+from notion import NotionService
 from os_computer_use.streaming import Sandbox, DisplayClient
 from os_computer_use.browser import Browser
 from os_computer_use.sandbox_agent import SandboxAgent
@@ -22,7 +23,7 @@ template_id = "okgm7s7tpblig340ayek"
 async def start(user_input=None, output_dir=None):
     sandbox = None
     client = None
-    
+
     try:
         sandbox = Sandbox(template=template_id)
 
@@ -45,22 +46,16 @@ async def start(user_input=None, output_dir=None):
         browser.open(vnc_url)
 
         while True:
-            # Ask for user input, and exit if the user presses ctl-c
-            if user_input is None:
-                try:
-                    user_input = input("USER: ")
-                except KeyboardInterrupt:
-                    break
-            # Run the agent, and go back to the prompt if the user presses ctl-c
-            else:
-                try:
-                    agent.run(user_input)
-                    user_input = None
-                except KeyboardInterrupt:
-                    user_input = None
-                except Exception as e:
-                    logger.print_colored(f"An error occurred: {e}", "red")
-                    user_input = None
+            try:
+                notion_service = NotionService()
+                notion_url = input("Enter Notion URL: ")
+                page_content = notion_service.get_page_text(notion_url)
+                print(page_content)
+                agent.run(page_content)
+            except KeyboardInterrupt:
+                break
+            except Exception as e:
+                logger.print_colored(f"An error occurred: {e}", "red")
 
     finally:
         #if client:

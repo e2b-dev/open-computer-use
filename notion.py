@@ -7,7 +7,7 @@ class NotionService:
     def __init__(self, api_key: Optional[str] = None):
         self.client = Client(auth=api_key or os.environ["NOTION_API_KEY"])
 
-    def extract_page_id_from_url(self, url: str) -> str:
+    def _extract_page_id_from_url(self, url: str) -> str:
         """Extract the page ID from a Notion URL."""
         # Pattern to match Notion URLs and extract the page ID
         pattern = r"notion\.so/(?:[^/]+/)?([a-f0-9]{32}|[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12})"
@@ -27,9 +27,9 @@ class NotionService:
 
         return page_id
 
-    def get_page_content(self, url: str) -> Dict[Any, Any]:
+    def _get_page_content(self, url: str) -> Dict[Any, Any]:
         """Retrieve the content of a Notion page by its URL."""
-        page_id = self.extract_page_id_from_url(url)
+        page_id = self._extract_page_id_from_url(url)
 
         try:
             # Retrieve the page content
@@ -50,7 +50,7 @@ class NotionService:
 
     def get_page_text(self, url: str) -> str:
         """Extract just the text content from a Notion page."""
-        content = self.get_page_content(url)
+        content = self._get_page_content(url)
 
         # Extract text from blocks
         text_content = []
