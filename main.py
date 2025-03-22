@@ -16,13 +16,15 @@ load_dotenv()
 # Configure E2B
 os.environ["E2B_API_KEY"] = os.getenv("E2B_API_KEY")
 
+template_id = "okgm7s7tpblig340ayek"
+
 
 async def start(user_input=None, output_dir=None):
     sandbox = None
     client = None
     
     try:
-        sandbox = Sandbox()
+        sandbox = Sandbox(template=template_id)
 
         # The display server won't work on desktop-dev-v2 since ffmpeg is not installed
         #client = DisplayClient(output_dir)
