@@ -28,6 +28,14 @@ class OpenRouterProvider(OpenAIBaseProvider):
         "qwen-2.5-vl":"qwen/qwen2.5-vl-72b-instruct:free"
     }
 
+class DashScopeProvider(OpenAIBaseProvider):
+    base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    api_key = os.getenv("DASHSCOPE_API_KEY")
+    aliases = {
+        "qwen-max": "qwen-max",
+        "qwen-vl-max":"qwen-vl-max"
+    }
+
 
 class FireworksProvider(OpenAIBaseProvider):
     base_url = "https://api.fireworks.ai/inference/v1"
