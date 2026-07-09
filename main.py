@@ -1,5 +1,5 @@
 from os_computer_use.streaming import Sandbox, DisplayClient
-from os_computer_use.browser import Browser
+from os_computer_use.browser_simple import Browser
 from os_computer_use.sandbox_agent import SandboxAgent
 from os_computer_use.logging import Logger
 import asyncio
