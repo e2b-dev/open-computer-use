@@ -6,7 +6,7 @@ https://github.com/user-attachments/assets/3837c4f6-45cb-43f2-9d51-a45f742424d4
 
 ## Features
 
-- Uses [E2B](https://e2b.dev) for secure [Desktop Sandbox](https://github.com/e2b-dev/desktop)
+- Uses [E2B](https://e2b.dev/?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=open-computer-use) for secure [Desktop Sandbox](https://github.com/e2b-dev/desktop)
 - Operates the computer via the keyboard, mouse, and shell commands
 - Supports 10+ LLMs, [OS-Atlas](https://osatlas.github.io/)/[ShowUI](https://github.com/showlab/ShowUI) and [any other models you want to integrate](#llm-support)!
 - Live streams the display of the sandbox on the client computer
@@ -58,7 +58,7 @@ If you add a new model or provider, please [make a PR](../../pulls) to this repo
 
 - Python 3.10 or later
 - [git](https://git-scm.com/)
-- [E2B API key](https://e2b.dev/dashboard?tab=keys)
+- [E2B API key](https://e2b.dev/dashboard?tab=keys&utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=open-computer-use)
 - API key for an LLM provider (see above)
 
 ### 1. Install the prerequisites
@@ -88,7 +88,7 @@ cd open-computer-use
 Create a `.env` file in `open-computer-use` and set the following:
 
 ```sh
-# Get your API key here: https://e2b.dev/
+# Get your API key here: https://e2b.dev/?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=open-computer-use
 E2B_API_KEY="your-e2b-api-key"
 ```
 
