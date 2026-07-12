@@ -175,7 +175,10 @@ class OpenAIBaseProvider(LLMProvider):
 class AnthropicBaseProvider(LLMProvider):
 
     def create_client(self):
-        return Anthropic(api_key=self.api_key).messages
+        client_kwargs = {"api_key": self.api_key}
+        if self.base_url:
+            client_kwargs["base_url"] = self.base_url
+        return Anthropic(**client_kwargs).messages
 
     def create_function_def(self, name, details, properties, required):
         return {
@@ -188,13 +191,21 @@ class AnthropicBaseProvider(LLMProvider):
             },
         }
 
-    def create_image_block(self, base64_image):
+    def create_image_block(self, image_data: bytes):
+        image_type = "png"
+        try:
+            with Image.open(io.BytesIO(image_data)) as img:
+                image_type = img.format.lower()
+        except Exception as e:
+            print(f"Error detecting image type: {e}")
+
+        encoded = base64.b64encode(image_data).decode("utf-8")
         return {
             "type": "image",
             "source": {
                 "type": "base64",
-                "media_type": "image/png",
-                "data": base64_image,
+                "media_type": f"image/{image_type}",
+                "data": encoded,
             },
         }
 

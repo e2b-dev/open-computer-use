@@ -80,10 +80,24 @@ class MistralProvider(MistralBaseProvider):
     }
 
 
+_MINIMAX_ALIASES = {
+    "minimax-m3": "MiniMax-M3",
+    "minimax-m2.7": "MiniMax-M2.7",
+}
+
+
 class MiniMaxProvider(OpenAIBaseProvider):
-    base_url = "https://api.minimax.io/v1"
+    base_url = os.getenv("MINIMAX_OPENAI_BASE_URL", "https://api.minimax.io/v1")
     api_key = os.getenv("MINIMAX_API_KEY")
-    aliases = {"minimax-m3": "MiniMax-M3"}
+    aliases = _MINIMAX_ALIASES
+
+
+class MiniMaxAnthropicProvider(AnthropicBaseProvider):
+    base_url = os.getenv(
+        "MINIMAX_ANTHROPIC_BASE_URL", "https://api.minimax.io/anthropic"
+    )
+    api_key = os.getenv("MINIMAX_API_KEY")
+    aliases = _MINIMAX_ALIASES
 
 
 class MoonshotProvider(OpenAIBaseProvider):
