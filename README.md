@@ -49,6 +49,9 @@ The providers are imported from [providers.py](/os_computer_use/providers.py) an
   - ShowUI (grounding)
 - Moonshot
 - Mistral AI (Pixtral for vision, Mistral Large for actions)
+- MiniMax:
+  - MiniMax-M3 (vision + action)
+  - MiniMax-M2.7 (action only)
 
 If you add a new model or provider, please [make a PR](../../pulls) to this repository with the updated providers.py!
 
@@ -103,9 +106,19 @@ GROQ_API_KEY=...
 GEMINI_API_KEY=...
 OPENAI_API_KEY=...
 ANTHROPIC_API_KEY=...
+MINIMAX_API_KEY=...
 MOONSHOT_API_KEY=...
 # Required: Provide your Hugging Face token to bypass Gradio rate limits.
 HF_TOKEN=...
+```
+
+Use `MiniMaxProvider` for the OpenAI-compatible API or
+`MiniMaxAnthropicProvider` for the Anthropic-compatible API in `config.py`.
+MiniMax uses global API endpoints by default. To use the China endpoints, add:
+
+```sh
+MINIMAX_OPENAI_BASE_URL=https://api.minimaxi.com/v1
+MINIMAX_ANTHROPIC_BASE_URL=https://api.minimaxi.com/anthropic
 ```
 
 ### 4. Start the web interface
