@@ -10,6 +10,7 @@ grounding_model = providers.OSAtlasProvider()
 # vision_model = providers.AnthropicProvider("claude-3.5-sonnet")
 # vision_model = providers.MoonshotProvider("moonshot-v1-vision")
 # vision_model = providers.MistralProvider("pixtral")
+# vision_model = providers.OrcaRouterProvider("gpt-5.5")
 #vision_model = providers.GroqProvider("llama-3.2")
 vision_model = providers.OpenRouterProvider("qwen-2.5-vl")
 

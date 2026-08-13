@@ -29,6 +29,16 @@ class OpenRouterProvider(OpenAIBaseProvider):
     }
 
 
+class OrcaRouterProvider(OpenAIBaseProvider):
+    base_url = "https://api.orcarouter.ai/v1"
+    api_key = os.getenv("ORCAROUTER_API_KEY")
+    aliases = {
+        "gpt-5.5": "openai/gpt-5.5",
+        "claude-sonnet": "anthropic/claude-sonnet-5",
+        "gemini-flash": "google/gemini-3.5-flash",
+    }
+
+
 class FireworksProvider(OpenAIBaseProvider):
     base_url = "https://api.fireworks.ai/inference/v1"
     api_key = os.getenv("FIREWORKS_API_KEY")
