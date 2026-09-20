@@ -101,7 +101,7 @@ class SandboxAgent:
 
     @tool(
         description="Send a key or combination of keys to the system.",
-        params={"name": "Key or combination (e.g. 'Return', 'Ctl-C')"},
+        params={"name": "Key or combination (e.g. 'Return', 'Ctrl-C')"},
     )
     def send_key(self, name):
         self.sandbox.press(name)
@@ -121,7 +121,7 @@ class SandboxAgent:
         position = grounding_model.call(query, self.latest_screenshot)
         dot_image = draw_big_dot(Image.open(self.latest_screenshot), position)
         filepath = self.save_image(dot_image, "location")
-        logger.log(f"{action_name} {filepath})", "gray")
+        logger.log(f"{action_name} {filepath}", "gray")
 
         x, y = position
         self.sandbox.move_mouse(x, y)
