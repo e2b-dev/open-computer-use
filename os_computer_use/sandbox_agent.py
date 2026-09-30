@@ -1,7 +1,7 @@
 from os_computer_use.config import vision_model, action_model, grounding_model
 from os_computer_use.llm_provider import Message
 from os_computer_use.logging import logger
-from os_computer_use.grounding import draw_big_dot
+from os_computer_use.grounding import coerce_point, draw_big_dot
 
 import shlex
 import os
@@ -112,13 +112,30 @@ class SandboxAgent:
         params={"text": "Text to type"},
     )
     def type_text(self, text):
-        self.sandbox.write(text, chunk_size=TYPING_GROUP_SIZE, delay_in_ms=TYPING_DELAY_MS)
+        # libxdo rejects UTF-8 when the sandbox locale is C.
+        if text.isascii():
+            self.sandbox.write(text, chunk_size=TYPING_GROUP_SIZE, delay_in_ms=TYPING_DELAY_MS)
+            return "The text has been typed."
+        quoted = shlex.quote(text)
+        # xdotool exits 0 even when libxdo rejects the text, so check stderr.
+        result = self.sandbox.commands.run(
+            "export LC_ALL=C.UTF-8 LANG=C.UTF-8; "
+            f"xdotool type --delay {TYPING_DELAY_MS} {quoted}"
+        )
+        if result.stderr and "Invalid multi-byte sequence" in result.stderr:
+            raise RuntimeError(result.stderr.strip())
         return "The text has been typed."
 
     def click_element(self, query, click_command, action_name="click"):
         """Base method for all click operations"""
         self.screenshot()
         position = grounding_model.call(query, self.latest_screenshot)
+        with Image.open(self.latest_screenshot) as image:
+            width, height = image.size
+        try:
+            position = coerce_point(position, width, height)
+        except (TypeError, ValueError, KeyError, json.JSONDecodeError) as exc:
+            return f"Error locating '{query}': {exc}"
         dot_image = draw_big_dot(Image.open(self.latest_screenshot), position)
         filepath = self.save_image(dot_image, "location")
         logger.log(f"{action_name} {filepath})", "gray")
@@ -174,6 +191,8 @@ class SandboxAgent:
         logger.log(f"USER: {instruction}", print=False)
 
         should_continue = True
+        last_failure = None
+        failure_count = 0
         while should_continue:
             # Stop the sandbox from timing out
             self.sandbox.set_timeout(60)
@@ -208,7 +227,26 @@ class SandboxAgent:
                 logger.log(f"ACTION: {name} {str(parameters)}", "red")
                 # Write the tool-call to the message history using the same format used by the model
                 self.messages.append(Message(json.dumps(tool_call)))
-                result = self.call_function(name, parameters)
+                action_key = (
+                    name,
+                    json.dumps(parameters, sort_keys=True, ensure_ascii=False),
+                )
+                if action_key == last_failure and failure_count >= 2:
+                    result = (
+                        "Error: this action already failed twice. "
+                        "Choose a different action or a different target."
+                    )
+                else:
+                    result = self.call_function(name, parameters)
+                    if isinstance(result, str) and result.startswith("Error"):
+                        if action_key == last_failure:
+                            failure_count += 1
+                        else:
+                            last_failure = action_key
+                            failure_count = 1
+                    else:
+                        last_failure = None
+                        failure_count = 0
 
                 self.messages.append(
                     Message(logger.log(f"OBSERVATION: {result}", "yellow"))

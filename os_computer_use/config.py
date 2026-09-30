@@ -4,6 +4,8 @@ from os_computer_use import providers
 
 grounding_model = providers.OSAtlasProvider()
 # grounding_model = providers.ShowUIProvider()
+# from os_computer_use.grounding import VisionGrounding
+# grounding_model = VisionGrounding(vision_model)
 
 # vision_model = providers.FireworksProvider("llama-3.2")
 # vision_model = providers.OpenAIProvider("gpt-4o")
