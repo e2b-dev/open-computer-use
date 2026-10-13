@@ -29,6 +29,11 @@ class OpenRouterProvider(OpenAIBaseProvider):
     }
 
 
+class CheaperInferenceProvider(OpenAIBaseProvider):
+    base_url = "https://api.cheaperinference.com/v1"
+    api_key = os.getenv("CHEAPER_INFERENCE_API_KEY")
+
+
 class FireworksProvider(OpenAIBaseProvider):
     base_url = "https://api.fireworks.ai/inference/v1"
     api_key = os.getenv("FIREWORKS_API_KEY")
