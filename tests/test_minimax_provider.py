@@ -13,129 +13,183 @@ from os_computer_use.providers import MiniMaxAnthropicProvider, MiniMaxProvider
 
 
 class MiniMaxProviderTests(unittest.TestCase):
-    def test_aliases_cover_supported_models(self):
-        expected = {
-            "minimax-m3": "MiniMax-M3",
-            "minimax-m2.7": "MiniMax-M2.7",
+    models = (
+        (None, "MiniMax-M3.1-Flash"),
+        ("minimax-m3.1-flash", "MiniMax-M3.1-Flash"),
+        ("MiniMax-M3.1-Flash", "MiniMax-M3.1-Flash"),
+        ("minimax-m3", "MiniMax-M3"),
+        ("MiniMax-M3", "MiniMax-M3"),
+        ("minimax-m2.7", "MiniMax-M2.7"),
+        ("MiniMax-M2.7", "MiniMax-M2.7"),
+        ("custom-model-id", "custom-model-id"),
+    )
+    tools = {
+        "click_item": {
+            "description": "Click on an item on the screen",
+            "params": {"description": "Item to click"},
         }
-        self.assertEqual(MiniMaxProvider.aliases, expected)
-        self.assertEqual(MiniMaxAnthropicProvider.aliases, expected)
+    }
 
-    def test_openai_endpoints_append_chat_completions_once(self):
-        endpoints = (
-            ("https://api.minimax.io/v1", "/v1/chat/completions"),
-            ("https://api.minimaxi.com/v1", "/v1/chat/completions"),
-        )
+    def test_aliases_advertise_flash_first_and_m3_only(self):
+        expected = [
+            ("minimax-m3.1-flash", "MiniMax-M3.1-Flash"),
+            ("minimax-m3", "MiniMax-M3"),
+        ]
+        for provider in (MiniMaxProvider, MiniMaxAnthropicProvider):
+            self.assertEqual(list(provider.aliases.items()), expected)
 
-        for base_url, expected_path in endpoints:
-            with self.subTest(base_url=base_url):
-                seen_paths = []
-
-                def handler(request):
-                    seen_paths.append(request.url.path)
-                    return Response(
-                        200,
-                        json={
-                            "id": "chatcmpl-test",
-                            "object": "chat.completion",
-                            "created": 0,
-                            "model": "MiniMax-M3",
-                            "choices": [
-                                {
-                                    "index": 0,
-                                    "message": {
-                                        "role": "assistant",
-                                        "content": "ok",
-                                    },
-                                    "finish_reason": "stop",
-                                }
-                            ],
-                            "usage": {
-                                "prompt_tokens": 1,
-                                "completion_tokens": 1,
-                                "total_tokens": 2,
-                            },
-                        },
-                    )
-
-                sdk_client = OpenAI(
-                    api_key="test",
-                    base_url=base_url,
-                    http_client=Client(transport=MockTransport(handler)),
-                )
-                try:
-                    with (
-                        patch.object(MiniMaxProvider, "base_url", base_url),
-                        patch(
-                            "os_computer_use.llm_provider.OpenAI",
-                            return_value=sdk_client,
-                        ),
-                    ):
-                        provider = MiniMaxProvider("minimax-m3")
-                        self.assertEqual(
-                            provider.call([Message("hello", role="user")]), "ok"
-                        )
-                finally:
-                    sdk_client.close()
-
-                self.assertEqual(seen_paths, [expected_path])
-
-    def test_anthropic_endpoints_append_v1_messages_once(self):
-        endpoints = (
-            ("https://api.minimax.io/anthropic", "/anthropic/v1/messages"),
-            ("https://api.minimaxi.com/anthropic", "/anthropic/v1/messages"),
-        )
+    def exercise_request(self, provider_class, base_url, model, functions=None,
+                         completion_kwargs=None):
+        seen = []
         image_data = Path(__file__).with_name("test_screenshot.png").read_bytes()
+        messages = [
+            Message("Keep the conversation context.", role="system"),
+            Message("Previous reply"),
+            Message(["Click the item", image_data], role="user"),
+        ]
+        anthropic = provider_class is MiniMaxAnthropicProvider
 
-        for base_url, expected_path in endpoints:
-            with self.subTest(base_url=base_url):
-                seen_requests = []
-
-                def handler(request):
-                    seen_requests.append(
-                        (request.url.path, json.loads(request.content))
-                    )
-                    return Response(
-                        200,
-                        json={
-                            "id": "msg_test",
-                            "type": "message",
-                            "role": "assistant",
-                            "model": "MiniMax-M3",
-                            "content": [{"type": "text", "text": "ok"}],
-                            "stop_reason": "end_turn",
-                            "stop_sequence": None,
-                            "usage": {"input_tokens": 1, "output_tokens": 1},
+        def handler(request):
+            body = json.loads(request.content)
+            seen.append((str(request.url), body))
+            if anthropic:
+                content = [{"type": "text", "text": "ok"}]
+                if functions:
+                    content.append({
+                        "type": "tool_use", "id": "tool_test", "name": "click_item",
+                        "input": {"description": "item"},
+                    })
+                response = {
+                    "id": "msg_test", "type": "message", "role": "assistant",
+                    "model": body["model"], "content": content,
+                    "stop_reason": "tool_use" if functions else "end_turn",
+                    "stop_sequence": None,
+                    "usage": {"input_tokens": 1, "output_tokens": 1},
+                }
+            else:
+                message = {"role": "assistant", "content": "ok"}
+                if functions:
+                    message["tool_calls"] = [{
+                        "id": "tool_test", "type": "function",
+                        "function": {
+                            "name": "click_item",
+                            "arguments": '{"description": "item"}',
                         },
-                    )
+                    }]
+                response = {
+                    "id": "chatcmpl-test", "object": "chat.completion", "created": 0,
+                    "model": body["model"],
+                    "choices": [{"index": 0, "message": message,
+                                 "finish_reason": "tool_calls" if functions else "stop"}],
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 1,
+                              "total_tokens": 2},
+                }
+            return Response(200, json=response)
 
-                sdk_client = Anthropic(
-                    api_key="test",
-                    base_url=base_url,
-                    http_client=Client(transport=MockTransport(handler)),
+        sdk_class = Anthropic if anthropic else OpenAI
+        sdk_name = "Anthropic" if anthropic else "OpenAI"
+        with Client(transport=MockTransport(handler)) as http_client:
+            # Keep the real provider constructor and SDK serializer in the path.
+            def create_sdk(**kwargs):
+                return sdk_class(**kwargs, http_client=http_client, max_retries=0)
+
+            with (
+                patch.object(provider_class, "base_url", base_url),
+                patch.object(provider_class, "api_key", "test"),
+                patch("os_computer_use.llm_provider." + sdk_name,
+                      side_effect=create_sdk),
+            ):
+                provider = provider_class() if model is None else provider_class(model)
+                if completion_kwargs is not None:
+                    provider.completion([Message("hello", role="user")],
+                                        **completion_kwargs)
+                else:
+                    result = provider.call(messages, functions)
+                    if functions:
+                        self.assertEqual(result, ("ok", [{
+                            "type": "function", "name": "click_item",
+                            "parameters": {"description": "item"},
+                        }]))
+                    else:
+                        self.assertEqual(result, "ok")
+
+        self.assertEqual(len(seen), 1)
+        url, body = seen[0]
+        suffix = "/v1/messages" if anthropic else "/chat/completions"
+        self.assertEqual(url, base_url + suffix)
+        if completion_kwargs is None:
+            self.assertEqual(body["messages"][-2], messages[1])
+            content = body["messages"][-1]["content"]
+            self.assertEqual(content[0], {"type": "text", "text": "Click the item"})
+            if anthropic:
+                self.assertEqual(body["system"], messages[0]["content"])
+                self.assertEqual(body["max_tokens"], 4096)
+                self.assertEqual(content[1]["source"]["media_type"], "image/png")
+                encoded = content[1]["source"]["data"]
+            else:
+                self.assertEqual(body["messages"][0], messages[0])
+                url = content[1]["image_url"]["url"]
+                self.assertTrue(url.startswith("data:image/png;base64,"))
+                encoded = url.split(",", 1)[1]
+            self.assertEqual(base64.b64decode(encoded), image_data)
+            if functions:
+                tool = body["tools"][0]
+                if not anthropic:
+                    tool = tool["function"]
+                self.assertEqual(tool["name"], "click_item")
+                schema = tool["input_schema" if anthropic else "parameters"]
+                self.assertEqual(schema["required"], ["description"])
+            else:
+                self.assertNotIn("tools", body)
+        return body
+
+    def test_default_and_explicit_models_at_sdk_http_boundary(self):
+        for provider_class, prefix in (
+            (MiniMaxProvider, "/v1"),
+            (MiniMaxAnthropicProvider, "/anthropic"),
+        ):
+            for host in ("api.minimax.io", "api.minimaxi.com"):
+                for model, expected_model in self.models:
+                    for functions in (None, self.tools):
+                        with self.subTest(provider=provider_class.__name__, host=host,
+                                          model=model, tools=bool(functions)):
+                            body = self.exercise_request(
+                                provider_class, "https://" + host + prefix,
+                                model, functions,
+                            )
+                            self.assertEqual(body["model"], expected_model)
+                            # Preserve server reasoning defaults and omit unsupported flags.
+                            for field in ("thinking", "reasoning_effort", "output_config",
+                                          "service_tier", "reasoning_split"):
+                                self.assertNotIn(field, body)
+
+    def test_custom_endpoint_and_model_are_preserved(self):
+        for provider_class, base_url in (
+            (MiniMaxProvider, "https://proxy.example/custom/v1"),
+            (MiniMaxAnthropicProvider, "https://proxy.example/custom/anthropic"),
+        ):
+            with self.subTest(provider=provider_class.__name__):
+                body = self.exercise_request(provider_class, base_url, "saved-custom-model")
+                self.assertEqual(body["model"], "saved-custom-model")
+
+    def test_explicit_flash_reasoning_options_reach_the_sdk_transport(self):
+        for effort in ("low", "medium", "high", "xhigh", "max"):
+            with self.subTest(effort=effort):
+                body = self.exercise_request(
+                    MiniMaxProvider, "https://api.minimax.io/v1", None,
+                    completion_kwargs={"reasoning_effort": effort},
                 )
-                try:
-                    with (
-                        patch.object(MiniMaxAnthropicProvider, "base_url", base_url),
-                        patch(
-                            "os_computer_use.llm_provider.Anthropic",
-                            return_value=sdk_client,
-                        ),
-                    ):
-                        provider = MiniMaxAnthropicProvider("minimax-m3")
-                        self.assertEqual(
-                            provider.call([Message([image_data], role="user")]), "ok"
-                        )
-                finally:
-                    sdk_client.close()
-
-                self.assertEqual(len(seen_requests), 1)
-                path, body = seen_requests[0]
-                self.assertEqual(path, expected_path)
-                self.assertEqual(path.count("/v1/messages"), 1)
-                encoded_image = body["messages"][0]["content"][0]["source"]["data"]
-                self.assertIsInstance(encoded_image, str)
-                self.assertEqual(base64.b64decode(encoded_image), image_data)
+                self.assertEqual(body["reasoning_effort"], effort)
+                body = self.exercise_request(
+                    MiniMaxAnthropicProvider, "https://api.minimax.io/anthropic", None,
+                    completion_kwargs={
+                        "max_tokens": 4096,
+                        "extra_body": {"thinking": {"type": "adaptive"},
+                                       "output_config": {"effort": effort}},
+                    },
+                )
+                self.assertEqual(body["thinking"], {"type": "adaptive"})
+                self.assertEqual(body["output_config"], {"effort": effort})
 
 
 if __name__ == "__main__":

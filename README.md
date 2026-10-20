@@ -50,8 +50,8 @@ The providers are imported from [providers.py](/os_computer_use/providers.py) an
 - Moonshot
 - Mistral AI (Pixtral for vision, Mistral Large for actions)
 - MiniMax:
+  - MiniMax-M3.1-Flash (default for actions)
   - MiniMax-M3 (vision + action)
-  - MiniMax-M2.7 (action only)
 
 If you add a new model or provider, please [make a PR](../../pulls) to this repository with the updated providers.py!
 
@@ -114,6 +114,9 @@ HF_TOKEN=...
 
 Use `MiniMaxProvider` for the OpenAI-compatible API or
 `MiniMaxAnthropicProvider` for the Anthropic-compatible API in `config.py`.
+Both default to `minimax-m3.1-flash` when no model is supplied; use `minimax-m3`
+to select MiniMax-M3 explicitly. Existing explicit `minimax-m2.7` configurations
+still resolve to their original model, and custom model IDs pass through unchanged.
 MiniMax uses global API endpoints by default. To use the China endpoints, add:
 
 ```sh
