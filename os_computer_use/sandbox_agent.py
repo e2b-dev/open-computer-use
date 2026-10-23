@@ -1,4 +1,6 @@
-from os_computer_use.config import vision_model, action_model, grounding_model
+from os_computer_use.config import (
+    vision_model, action_model, grounding_model, search_provider as default_search_provider,
+)
 from os_computer_use.llm_provider import Message
 from os_computer_use.logging import logger
 from os_computer_use.grounding import draw_big_dot
@@ -8,6 +10,10 @@ import os
 import tempfile
 from PIL import Image
 import json
+from uuid import uuid4
+
+_DEFAULT_SEARCH = object()
+SEARCH_TOOLS = {"web_search", "web_fetch"}
 
 TYPING_DELAY_MS = 12
 TYPING_GROUP_SIZE = 50
@@ -22,9 +28,20 @@ tools = {
 
 class SandboxAgent:
 
-    def __init__(self, sandbox, output_dir=".", save_logs=True):
+    def __init__(
+        self, sandbox, output_dir=".", save_logs=True, search_provider=_DEFAULT_SEARCH
+    ):
         super().__init__()
         self.messages = []  # Agent memory
+        self.search_session_id = str(uuid4())
+        self.search_provider = (
+            default_search_provider
+            if search_provider is _DEFAULT_SEARCH else search_provider
+        )
+        self.tools = {
+            name: details for name, details in tools.items()
+            if name not in SEARCH_TOOLS or self.search_provider is not None
+        }
         self.sandbox = sandbox  # E2B sandbox
         self.latest_screenshot = None  # Most recent PNG of the screen
         self.image_counter = 0  # Current screenshot number
@@ -35,13 +52,13 @@ class SandboxAgent:
             logger.log_file = f"{output_dir}/log.html"
 
         print("The agent will use the following actions:")
-        for action, details in tools.items():
+        for action, details in self.tools.items():
             param_str = ", ".join(details.get("params").keys())
             print(f"- {action}({param_str})")
 
     def call_function(self, name, arguments):
 
-        func_impl = getattr(self, name.lower()) if name.lower() in tools else None
+        func_impl = getattr(self, name.lower()) if name.lower() in self.tools else None
         if func_impl:
             try:
                 result = func_impl(**arguments) if arguments else func_impl()
@@ -57,6 +74,32 @@ class SandboxAgent:
             return func
 
         return decorator
+
+    def reset_memory(self):
+        """Start a new conversation, including a fresh search identity."""
+        self.messages.clear()
+        self.search_session_id = str(uuid4())
+
+    @tool(
+        description="Search the web for current information and source URLs.",
+        params={
+            "objective": "Information to find",
+            "query": "A concise keyword query, usually 3 to 6 words",
+        },
+    )
+    def web_search(self, objective, query):
+        if self.search_provider is None:
+            return "Web search is disabled."
+        return self.search_provider.search(objective, query, self.search_session_id)
+
+    @tool(
+        description="Read a public web page and return relevant content with its URL.",
+        params={"url": "HTTP or HTTPS URL of the page to read"},
+    )
+    def web_fetch(self, url):
+        if self.search_provider is None:
+            return "Web search is disabled."
+        return self.search_provider.fetch(url, self.search_session_id)
 
     def save_image(self, image, prefix="image"):
         self.image_counter += 1
@@ -192,7 +235,7 @@ class SandboxAgent:
                         "I will now use tool calls to take these actions, or use the stop command if the objective is complete.",
                     ),
                 ],
-                tools,
+                self.tools,
             )
 
             if content:

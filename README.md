@@ -130,3 +130,31 @@ poetry run start --prompt "use the web browser to get the current weather in sf"
 
 The display stream should be visible a few seconds after the Python program starts.
 
+## Web search and page fetching
+
+The agent can use `web_search` and `web_fetch` to look up current information and
+read public pages directly, alongside its existing desktop tools.
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) provides
+free anonymous search in Fast mode and page fetching, with no account or API key
+needed. Results include source URLs and excerpts in the agent's observations.
+For example, ask it to "research E2B desktop documentation and open the relevant
+page in the browser."
+
+Search queries and requested URLs are sent from your local agent to Parallel.
+Set `WEB_SEARCH_ENABLED=false` in `.env` to remove both tools, or set
+`search_provider = None` in `os_computer_use/config.py`. The provider is initialized
+without making a network request; it connects only when a tool is called.
+Anonymous use has rate limits, and service errors are returned to the agent.
+Each call has a 30-second deadline and can be interrupted with Ctrl-C.
+
+An optional `PARALLEL_API_KEY` enables authenticated use. `PARALLEL_SEARCH_URL`
+overrides the MCP endpoint, including authenticated search settings in its query
+string. Explicit endpoint and credential errors are reported without falling back
+to anonymous search. You can also assign a custom provider in `config.py` (or pass
+`search_provider=` to `SandboxAgent`) with `search(objective, query, session_id)`
+and `fetch(url, session_id)` methods returning text.
+
+Follow-up prompts to the same agent share its conversation and search identity.
+Call `agent.reset_memory()` to clear the conversation and create a new identity.
+The desktop browser and existing model configuration remain available.
+
